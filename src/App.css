@@ -1,4 +1,4 @@
-/* From Uiverse.io by Nawsome */ 
+ 
 .loader {
   position: absolute;
   top: 50%;
@@ -109,4 +109,135 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 2;
+    transform: translateY(0);
+  }
+}
+
+
+body {
+  margin: 0;
+  font-family: Inter, sans-serif;
+}
+
+.dashboard {
+  padding: 16px;
+  font-size: 13px;
+  background-color: #1e1e1e;
+  color: #f0f0f0;
+  min-height: 100%;
+}
+
+header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: #ffffff;
+}
+
+header p {
+  font-size: 13px;
+  color: #bbb;
+  margin: 0 0 16px;
+}
+
+.run-button {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  background-color: #df82da;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.run-button:hover {
+  background-color: #e496d3;
+}
+
+.run-button:disabled {
+  background-color: #3a3a3a;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.run-button:disabled:hover {
+  background-color: #3a3a3a;
+}
+
+.results-list {
+  display: grid;
+  gap: 12px;
+}
+
+.result-box {
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #2a2a2a;
+  border-left: 4px solid;
+}
+
+.result-box.pass {
+  border-color: #4caf50;
+}
+
+.result-box.fail {
+  border-color: #f44336;
+}
+
+.result-box.warning {
+  border-color: #ff9800;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.result-status {
+  background-color: #444;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.result-box.pass .result-status {
+  background-color: #4caf50;
+}
+.result-box.fail .result-status {
+  background-color: #f44336;
+}
+.result-box.warning .result-status {
+  background-color: #ff9800;
+}
+
+.result-details {
+  font-size: 12px;
+  color: #ddd;
+  padding-left: 18px;
+  margin: 0;
+}
+
+.result-details li {
+  margin-bottom: 4px;
 }
