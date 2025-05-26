@@ -124,6 +124,71 @@
                 }
             }
         },
+//         {
+//   id: "cms-unused-collections",
+//   title: "CMS Usage Check",
+//   run: async () => {
+//     const collections = await framer.getCollections()
+//     const issues: string[] = []
+
+//     if (!collections || collections.length === 0) {
+//       issues.push("❌ No CMS collections found in the project.")
+//     }
+
+//     for (const collection of collections) {
+//       const items = await collection.getItems?.()
+//       if (!items || items.length === 0) {
+//         issues.push(`⚠️ Collection "${collection.name}" is empty.`)
+//       }
+//     }
+
+//     return {
+//       id: "cms-unused-collections",
+//       title: "CMS Usage Check",
+//       status: issues.length > 0 ? "warning" : "pass",
+//       details: issues
+//     }
+//   }
+// }
+// ,{
+//   id: "cms-field-naming",
+//   title: "CMS Field Naming Clarity",
+//   run: async () => {
+//     const collections = await framer.getCollections();
+//     const issues: string[] = [];
+//     // Add more generic or unclear names as needed
+//     const genericNames = ["field", "data", "item", "value", "name", "text"];
+
+//     for (const collection of collections) {
+//       const fields = await collection.getFields();
+//       for (const field of fields) {
+//         const name = field.name;
+//         if (name.length < 3) {
+//           issues.push(`⚠️ Field "${name}" in collection "${collection.name}" is very short. Use descriptive names.`);
+//         }
+//         if (/^[a-zA-Z]{1,2}$/.test(name)) {
+//           issues.push(`⚠️ Field "${name}" in collection "${collection.name}" is too short or unclear.`);
+//         }
+//         if (/^\d+$/.test(name)) {
+//           issues.push(`⚠️ Field "${name}" in collection "${collection.name}" is only numbers. Use descriptive names.`);
+//         }
+//         if (genericNames.includes(name.toLowerCase())) {
+//           issues.push(`⚠️ Field "${name}" in collection "${collection.name}" is too generic. Use more specific names.`);
+//         }
+//         if (/[^a-zA-Z0-9_]/.test(name)) {
+//           issues.push(`⚠️ Field "${name}" in collection "${collection.name}" contains special characters. Use only letters, numbers, or underscores.`);
+//         }
+//       }
+//     }
+
+//     return {
+//       id: "cms-field-naming",
+//       title: "CMS Field Naming Clarity",
+//       status: issues.length > 0 ? "warning" : "pass",
+//       details: issues,
+//     };
+//   },
+// }
 
 //         // ⚠️ Flag similar frames that might be reusable components
 //         {

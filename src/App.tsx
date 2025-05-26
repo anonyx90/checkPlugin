@@ -54,7 +54,7 @@ export function App() {
   return (
     <main className="dashboard">
       <header>
-        <h2>🧪 Template Audit Scanner</h2>
+        <h2> 🧪 ~ FrameAudit</h2>
         <p>Run checks to validate your Framer template before submission.</p>
       </header>
 
