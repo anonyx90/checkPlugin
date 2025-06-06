@@ -1,87 +1,104 @@
 import { framer } from "framer-plugin";
 import { useState } from "react";
 import "./App.css";
-import { CheckResult, checks } from "./check";
+import { CheckResult } from "./types";
+import { checks } from "./checks/allChecks";
+import { PageSpeedResult } from "./PageSpeedResult";
 
 framer.showUI({
   position: "top right",
-  width: 360,
-  height: 400,
-  minWidth: 360,
-  minHeight: 400,
+  width: 560,
+  height: 500,
+  minWidth: 560,
+  minHeight: 500,
   resizable: true,
 });
 
-const collections = await framer.getCollections();
-const collection = await framer.getActiveCollection();
-await framer.getCollections();
 
-console.log(collections, collection);
 
+async function runAllChecks(): Promise<Record<string, CheckResult[]>> {
+  const results = await Promise.all(checks.map((check) => check.run()));
+  const grouped: Record<string, CheckResult[]> = {};
+
+  for (let i = 0; i < checks.length; i++) {
+    const category = checks[i].category ?? "Uncategorized";
+    if (!grouped[category]) grouped[category] = [];
+    grouped[category].push(results[i]);
+  }
+
+  return grouped;
+}
 
 export function App() {
-  const [results, setResults] = useState<CheckResult[]>([]);
+  const [groupedResults, setGroupedResults] = useState<Record<string, CheckResult[]>>({});
   const [running, setRunning] = useState(false);
-  
 
-  const runAllChecks = async () => {
+  const handleRunChecks = async () => {
     setRunning(true);
-    setResults([]);
+    setGroupedResults({});
 
     try {
-      const all: CheckResult[] = [];
-      for (const check of checks) {
-        const result = await check.run();
-        all.push(result);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setResults(all);
-    } catch (error) {
-      setResults([
-        {
-          id: "error",
-          title: "Plugin Error",
-          status: "fail",
-          details: [String(error)],
-        },
+      const [grouped] = await Promise.all([
+        runAllChecks(),
+        new Promise((resolve) => setTimeout(resolve, 2000)),
       ]);
+      setGroupedResults(grouped);
+    } catch (error) {
+      setGroupedResults({
+        Error: [
+          {
+            id: "error",
+            title: "Plugin Error",
+            status: "fail",
+            details: [String(error)],
+          },
+        ],
+      });
     } finally {
       setRunning(false);
     }
   };
 
   return (
-    <main className="dashboard">
-      <header>
-        <h2> 🧪 ~ FrameAudit</h2>
-        <p>Run checks to validate your Framer template before submission.</p>
-      </header>
+<main className="dashboard">
+  <div className="top-row">
+    <header>
+      <h2>🧪 ~ FrameAudit</h2>
+      <p>Run checks to validate your Framer template before submission.</p>
+    </header>
+    
+  </div>
 
-      {running ? (
-        <div className="loader-group">
-          <div className="loader" />
-          <div className="loader" />
-          <div className="loader" />
-        </div>
-      ) : (
-        <>
-          <button className="run-button" onClick={runAllChecks} disabled={running}>
-            🚀 Run All Checks
-          </button>
+  <PageSpeedResult />
+  <button className="" onClick={handleRunChecks} disabled={running}>
+    <span>🚀 Run All Checks</span>  
+    </button>
 
-          {results.length > 0 && (
-   <div className="results-list fade-in">
-
+  {running ? (
+    <div className="loader">
+ <span></span>
+    </div>
+  ) : (
+    <>
+      {Object.keys(groupedResults).length > 0 && (
+        <div className="results-list fade-in">
+          {Object.entries(groupedResults).map(([category, results]) => (
+            <section key={category} className="category-group">
+              <h3>{category}</h3>
               {results.map((result) => {
                 const emoji =
-                  result.status === "pass" ? "✅" :
-                  result.status === "fail" ? "❌" : "⚠️";
+                  result.status === "pass"  
+                    ? "✅"
+                    : result.status === "fail"
+                    ? "❌"
+                    : "⚠️"; 
 
                 return (
                   <div key={result.id} className={`result-box ${result.status}`}>
                     <div className="result-header">
-                      <span>{emoji} {result.title}</span>
+                      <span>
+                        {emoji} {result.title}
+                      </span>
                       <span className="result-status">{result.status}</span>
                     </div>
                     {Array.isArray(result.details) && result.details.length > 0 && (
@@ -94,10 +111,13 @@ export function App() {
                   </div>
                 );
               })}
-            </div>
-          )}
-        </>
+            </section>
+          ))}
+        </div>
       )}
-    </main>
+    </>
+  )}
+</main>
+
   );
 }
