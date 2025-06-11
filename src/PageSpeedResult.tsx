@@ -63,7 +63,7 @@ function ScoreMiniRow({ label, value, color }: { label: string; value: React.Rea
       minWidth: 38,
       justifyContent: "center"
     }}>
-      {label}: <span style={{ marginLeft: 4, display: "inline-flex", alignItems: "center", width: "24px" }}>{value}</span>
+      {label}: <span style={{ marginLeft: 4 }}>{value}</span>
     </span>
   );
 }
@@ -73,8 +73,8 @@ export function PageSpeedResult() {
   const [desktopScores, setDesktopScores] = useState<Scores | null>(null);
   const [loading, setLoading] = useState(false);
   const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Animated score states
   const [animatedMobileScores, setAnimatedMobileScores] = useState<Record<string, number>>({});
   const [animatedDesktopScores, setAnimatedDesktopScores] = useState<Record<string, number>>({});
 
@@ -82,6 +82,7 @@ export function PageSpeedResult() {
     let cancelled = false;
 
     async function fetchScores() {
+      setError(null);
       setLoading(true);
       setMobileScores(null);
       setDesktopScores(null);
@@ -89,29 +90,35 @@ export function PageSpeedResult() {
       setAnimatedDesktopScores({});
       setReportUrl(null);
 
-      const publishInfo = await framer.getPublishInfo();
-      const stagingUrl = publishInfo.staging?.url;
-      if (!stagingUrl) {
+      try {
+        const publishInfo = await framer.getPublishInfo();
+        const stagingUrl = publishInfo.staging?.url;
+
+        if (!stagingUrl) {
+          setError("No published site found. Please publish your site to run a PageSpeed report automatically.");
+          setLoading(false);
+          return;
+        }
+
+        setReportUrl(`https://pagespeed.web.dev/report?url=${encodeURIComponent(stagingUrl)}`);
+
+        const [mobile, desktop] = await Promise.all([
+          getPageSpeedScores(stagingUrl, "mobile"),
+          getPageSpeedScores(stagingUrl, "desktop"),
+        ]);
+
+        if (cancelled) return;
+
+        setMobileScores(mobile);
+        setDesktopScores(desktop);
+
+        animateScores(mobile, setAnimatedMobileScores);
+        animateScores(desktop, setAnimatedDesktopScores);
+      } catch (err) {
+        setError("Failed to fetch PageSpeed results. Please try again.");
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setReportUrl(`https://pagespeed.web.dev/report?url=${encodeURIComponent(stagingUrl)}`);
-
-      const [mobile, desktop] = await Promise.all([
-        getPageSpeedScores(stagingUrl, "mobile"),
-        getPageSpeedScores(stagingUrl, "desktop"),
-      ]);
-
-      if (cancelled) return;
-
-      setMobileScores(mobile);
-      setDesktopScores(desktop);
-
-      setLoading(false);
-
-      animateScores(mobile, setAnimatedMobileScores);
-      animateScores(desktop, setAnimatedDesktopScores);
     }
 
     function animateScores(targetScores: Scores, setAnimatedScores: React.Dispatch<React.SetStateAction<Record<string, number>>>) {
@@ -163,11 +170,11 @@ export function PageSpeedResult() {
   return (
     <section style={{ fontSize: 12, color: "#fff", width: "100%" }}>
       <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
 
       <div
         style={{
@@ -186,7 +193,7 @@ export function PageSpeedResult() {
             marginBottom: 6,
           }}
         >
-          <div className="button" style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
             <span style={{ fontSize: 13, fontWeight: 600, marginRight: 8 }}>⚡ PageSpeed</span>
             <span
               style={{
@@ -194,16 +201,16 @@ export function PageSpeedResult() {
                 borderRadius: 7,
                 fontSize: 10,
                 fontWeight: 500,
-                background: loading ? "#757575" : "#4caf50",
+                background: loading ? "#757575" : error ? "#f44336" : "#4caf50",
                 color: "#fff",
                 minWidth: 32,
                 textAlign: "center",
               }}
             >
-              {loading ? "Loading" : "Pass"}
+              {loading ? "Loading" : error ? "Error" : "Pass"}
             </span>
           </div>
-          {reportUrl && (
+          {reportUrl && !error && (
             <a
               href={reportUrl}
               target="_blank"
@@ -227,33 +234,39 @@ export function PageSpeedResult() {
           )}
         </div>
 
-        <div style={{ marginBottom: 6 }}>
-          <span style={{ color: "#bdbdbd", fontWeight: 500, fontSize: 11 }}>Mobile</span>
-          <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap" }}>
-            {scoreLabels.map(({ key, label, color }) => (
-              <ScoreMiniRow
-                key={key}
-                label={label}
-                value={displayScore(animatedMobileScores, mobileScores, key)}
-                color={color}
-              />
-            ))}
-          </div>
-        </div>
+        {error ? (
+          <div style={{  fontSize: 12, marginTop: 6 }}>{error}</div>
+        ) : (
+          <>
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: "#bdbdbd", fontWeight: 500, fontSize: 11 }}>Mobile</span>
+              <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap" }}>
+                {scoreLabels.map(({ key, label, color }) => (
+                  <ScoreMiniRow
+                    key={key}
+                    label={label}
+                    value={displayScore(animatedMobileScores, mobileScores, key)}
+                    color={color}
+                  />
+                ))}
+              </div>
+            </div>
 
-        <div>
-          <span style={{ color: "#bdbdbd", fontWeight: 500, fontSize: 11 }}>Desktop</span>
-          <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap" }}>
-            {scoreLabels.map(({ key, label, color }) => (
-              <ScoreMiniRow
-                key={key}
-                label={label}
-                value={displayScore(animatedDesktopScores, desktopScores, key)}
-                color={color}
-              />
-            ))}
-          </div>
-        </div>
+            <div>
+              <span style={{ color: "#bdbdbd", fontWeight: 500, fontSize: 11 }}>Desktop</span>
+              <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap" }}>
+                {scoreLabels.map(({ key, label, color }) => (
+                  <ScoreMiniRow
+                    key={key}
+                    label={label}
+                    value={displayScore(animatedDesktopScores, desktopScores, key)}
+                    color={color}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

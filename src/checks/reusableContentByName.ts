@@ -4,7 +4,7 @@ import type { CheckResult } from "../types";
 export const reusableContentByNameCheck = {
   id: "reusable-content-by-name",
   title: "Frames With Duplicate Names",
-   category: "Accessibility",
+  category: "Accessibility",
   run: async (): Promise<CheckResult> => {
     const frames = await framer.getNodesWithType("FrameNode");
     const nameMap = new Map<string, number>();
@@ -28,18 +28,22 @@ export const reusableContentByNameCheck = {
       nameMap.set(name, (nameMap.get(name) || 0) + 1);
     }
 
-    const issues = [...nameMap.entries()]
-      .filter(([_, count]) => count > 1)
-      .map(
-        ([name, count]) =>
-          `⚠️ The name "${name}" is used by ${count} frames. Consider using components.`
-      );
+    const duplicates = [...nameMap.entries()].filter(([_, count]) => count > 1);
+    const duplicateCount = duplicates.length;
+
+    const details = [];
+    if (duplicateCount > 0) {
+      details.push(`${duplicateCount} duplicate frame name(s) found:`);
+      for (const [name, count] of duplicates) {
+        details.push(`- "${name}" used ${count} times`);
+      }
+    }
 
     return {
       id: "reusable-content-by-name",
       title: "Frames With Duplicate Names",
-      status: issues.length > 0 ? "warning" : "pass",
-      details: issues,
+      status: duplicateCount > 0 ? "warning" : "pass",
+      details,
     };
   },
 };

@@ -4,7 +4,7 @@ import { Check } from "../types";
 export const unusedStylesCheck: Check = {
   id: "unused-styles",
   title: "Unused Text/Color Styles",
-  category: "Design",
+  category: "UI",
   run: async () => {
     // Get all text and frame nodes (add more types if needed)
     const textNodes = await framer.getNodesWithType?.("TextNode") || [];

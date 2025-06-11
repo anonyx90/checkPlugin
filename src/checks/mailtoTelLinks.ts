@@ -13,10 +13,14 @@ export const mailtoTelLinksCheck = {
       const text = await node.getText();
       if (!text) continue;
 
-      if (/@/.test(text) && !text.toLowerCase().startsWith("mailto:")) {
+      const lowerText = text.toLowerCase().trim();
+
+      if (/@/.test(lowerText) && !lowerText.startsWith("mailto:")) {
         issues.push(`❌ Email not using mailto: — "${text}"`);
       }
-      if (/^\+?[0-9\s-]+$/.test(text) && !text.toLowerCase().startsWith("tel:")) {
+
+      const phonePattern = /^\+?[\d\s\-\(\)]{7,}$/;
+      if (phonePattern.test(lowerText) && !lowerText.startsWith("tel:")) {
         issues.push(`❌ Phone not using tel: — "${text}"`);
       }
     }

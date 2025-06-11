@@ -7,6 +7,7 @@ export const unusedPagesCheck = {
   category: "Pages",
   run: async (): Promise<CheckResult> => {
     const pages = await framer.getNodesWithType("WebPageNode");
+    
     const textNodes = await framer.getNodesWithType("TextNode");
     const issues: string[] = [];
 
@@ -22,6 +23,7 @@ export const unusedPagesCheck = {
         issues.push(`⚠️ Page with path "${path}" is not referenced in any text.`);
       }
     }
+    console.log(pages)
 
     return {
       id: "unused-pages",

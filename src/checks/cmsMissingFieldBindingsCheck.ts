@@ -16,8 +16,7 @@ export const cmsMissingFieldBindingsCheck = {
         let usedInTemplate = false;
 
         for (const template of templates) {
-          // cast to any to safely call getBindings, which may not be typed
-          const bindings = (template as any).getBindings?.() || [];
+            const bindings = (template as any).getBindings?.() || [];
           if (
             bindings.some((b: any) => b.fieldName === collectionField.name)
           ) {

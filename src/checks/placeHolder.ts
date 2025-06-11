@@ -12,7 +12,7 @@ const normalizeText = (text: string) =>
 export const placeholderTextCheck: Check = {
   id: "placeholder-text",
   title: "No Placeholder Text",
-  category: "Content",
+  category: "Accessibility",
   run: async () => {
     const nodes = await framer.getNodesWithType("TextNode");
     const issues: string[] = [];
