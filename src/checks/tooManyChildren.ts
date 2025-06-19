@@ -4,7 +4,7 @@ import { Check } from "../types";
 export const tooManyChildrenCheck: Check = {
   id: "too-many-children",
   title: "Too Many Children in Frame/Page",
-  category: "Structure",
+  category: "Layout",
   run: async () => {
     const frames = await framer.getNodesWithType("FrameNode");
     const offenders: string[] = [];

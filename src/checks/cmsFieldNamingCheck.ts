@@ -7,7 +7,7 @@ export const cmsFieldNamingCheck = {
   category: "CMS",
   run: async (): Promise<CheckResult> => {
     const collections = await framer.getCollections();
-    const issues: string[] = [];
+    const issuesSet = new Set<string>();
     const badNamePattern = /^(field|text|item|data|input)\d*$/i;
 
     for (const collection of collections) {
@@ -15,11 +15,11 @@ export const cmsFieldNamingCheck = {
         const fields = (await collection.getFields?.()) || [];
         for (const field of fields) {
           if (badNamePattern.test(field.name)) {
-            issues.push(
+            issuesSet.add(
               `⚠️ Generic field name "${field.name}" in collection "${collection.name}". Use descriptive names.`
             );
           } else if (field.name === field.name.toUpperCase()) {
-            issues.push(
+            issuesSet.add(
               `⚠️ All-caps name "${field.name}" in collection "${collection.name}". Use camelCase or normal casing.`
             );
           }
@@ -30,13 +30,13 @@ export const cmsFieldNamingCheck = {
           error
         );
       }
-    }
+    } 
 
     return {
       id: "cms-field-naming",
       title: "CMS Field Naming Convention",
-      status: issues.length > 0 ? "warning" : "pass",
-      details: issues,
+      status: issuesSet.size > 0 ? "warning" : "pass",
+      details: Array.from(issuesSet),
     };
   },
 };

@@ -4,7 +4,7 @@ import { Check } from "../types";
 export const languageDefinedCheck: Check = {
   id: "language-defined",
   title: "Define Default Language in Project Settings",
-  category: "Project",
+  category: "accessibility",
   run: async () => {
     const defaultLocale = await framer.getDefaultLocale();
     const locales = await framer.getLocales?.();

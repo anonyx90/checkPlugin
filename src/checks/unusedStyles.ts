@@ -1,12 +1,26 @@
 import { framer } from "framer-plugin";
 import { Check } from "../types";
 
+// Helper to normalize names for comparison
+function normalize(str: string) {
+  return str.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+// Optionally, add aliases for common style names
+const styleAliases: Record<string, string[]> = {
+  "heading1": ["h1"],
+  "heading2": ["h2"],
+  "heading3": ["h3"],
+  "heading4": ["h4"],
+  "heading5": ["h5"],
+  "heading6": ["h6"],
+};
+
 export const unusedStylesCheck: Check = {
   id: "unused-styles",
   title: "Unused Text/Color Styles",
-  category: "UI",
+  category: "Assets",
   run: async () => {
-    // Get all text and frame nodes (add more types if needed)
     const textNodes = await framer.getNodesWithType?.("TextNode") || [];
     const frameNodes = await framer.getNodesWithType?.("FrameNode") || [];
     const allNodes = [...textNodes, ...frameNodes];
@@ -14,41 +28,44 @@ export const unusedStylesCheck: Check = {
     const textStyles = await framer.getTextStyles?.() || [];
     const colorStyles = await framer.getColorStyles?.() || [];
 
-    // Collect all used style IDs
-    const usedTextStyleIds = new Set<string>();
-    const usedColorStyleIds = new Set<string>();
-
+    // Collect all text content and node names for fuzzy matching
+    const allText = new Set<string>();
     for (const node of allNodes) {
-      if (
-        "textStyleId" in node &&
-        typeof node.textStyleId === "string" &&
-        node.textStyleId
-      ) {
-        usedTextStyleIds.add(node.textStyleId);
-      }
-      if (
-        "colorStyleId" in node &&
-        typeof node.colorStyleId === "string" &&
-        node.colorStyleId
-      ) {
-        usedColorStyleIds.add(node.colorStyleId);
+      if ((node as any).name) allText.add(normalize((node as any).name));
+      if ((node as any).getText) {
+        const text = await (node as any).getText();
+        if (text) allText.add(normalize(text));
       }
     }
 
-    const unusedTextStyles = textStyles.filter((style: any) => !usedTextStyleIds.has(style.id));
-    const unusedColorStyles = colorStyles.filter((style: any) => !usedColorStyleIds.has(style.id));
+    // Fuzzy match: consider a style used if its normalized name or alias appears in any node name or text
+    const unusedTextStyles = textStyles.filter((style: any) => {
+      const normStyle = normalize(style.name);
+      const aliases = styleAliases[normStyle] || [];
+      const allPossible = [normStyle, ...aliases];
+      return !Array.from(allText).some(t =>
+        allPossible.some(alias => t.includes(alias))
+      );
+    });
+
+    const unusedColorStyles = colorStyles.filter((style: any) => {
+      const normStyle = normalize(style.name);
+      return !Array.from(allText).some(t => t.includes(normStyle));
+    });
 
     const details: string[] = [];
     if (unusedTextStyles.length > 0)
-      details.push(`Unused Text Styles: ${unusedTextStyles.map((s: any) => s.name).join(", ")}`);
+      details.push(`Unused Text Styles (by fuzzy/alias match): ${unusedTextStyles.map((s: any) => s.name).join(", ")}`);
     if (unusedColorStyles.length > 0)
-      details.push(`Unused Color Styles: ${unusedColorStyles.map((s: any) => s.name).join(", ")}`);
+      details.push(`Unused Color Styles (by fuzzy match): ${unusedColorStyles.map((s: any) => s.name).join(", ")}`);
+
+    if (details.length === 0) details.push("All styles appear to be used (by fuzzy/alias match).");
 
     return {
       id: "unused-styles",
       title: "Unused Text/Color Styles",
-      status: details.length > 0 ? "warning" : "pass",
-      details: details.length > 0 ? details : ["All styles are used."],
+      status: details.length > 1 ? "warning" : "pass",
+      details,
     };
   },
 };

@@ -7,7 +7,7 @@ import "./App.css";
 
 framer.showUI({
   position: "center",
-  width: 560,
+  width: 580,
   height: 500,
   minWidth: 560,
   minHeight: 500,

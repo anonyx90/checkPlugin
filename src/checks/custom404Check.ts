@@ -4,7 +4,7 @@ import { CheckResult } from "../types";
 export const custom404Check = {
   id: "custom-404-page",
   title: "Custom 404 Page Exists",
-  category: "Pages",
+  category: "Links",
   run: async (): Promise<CheckResult> => {
     const pages = await framer.getNodesWithType("WebPageNode");
     const issues: string[] = [];

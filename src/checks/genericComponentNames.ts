@@ -4,7 +4,7 @@ import { CheckResult } from "../types";
 export const genericComponentNamesCheck = {
   id: "generic-component-names",
   title: "No Generic Component Names",
-  category: "UI",
+  category: "Links",
   run: async (): Promise<CheckResult> => {
     const components = [
       ...(await framer.getNodesWithType("ComponentInstanceNode")),

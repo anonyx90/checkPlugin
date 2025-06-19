@@ -9,87 +9,77 @@ export const accessibilityTagCheck: Check = {
   run: async () => {
     const frameNodes = await framer.getNodesWithType("FrameNode");
     const textNodes = await framer.getNodesWithType("TextNode");
-    const componentNodes = await framer.getNodesWithType(
-      "ComponentInstanceNode"
-    );
-    const svgNodes = await framer.getNodesWithType("SVGNode");
-    const nodes = [...frameNodes, ...textNodes, ...componentNodes, ...svgNodes];
 
-    const seenMessages = new Set<string>();
-    const issues: string[] = [];
+    const missingSection: Set<string> = new Set();
+    const missingFooter: Set<string> = new Set();
+    const missingNav: Set<string> = new Set();
+    const missingHeading: Set<string> = new Set();
 
-    for (const node of nodes) {
-      const tag = (node as any).tagName?.toLowerCase() || "";
+    for (const node of frameNodes) {
+      const tag = (node as any).tagName?.toLowerCase() || "div";
       const name = (node as any).name || "";
-      const altText = (node as any).alt;
-
       const nameLower = name.toLowerCase();
+      if (nameLower.includes("ignore")) continue;
 
-      const isLikelyButton = nameLower.includes("button");
-      const isLikelyHeading =
-        nameLower.includes("heading") || /^h[1-6]/.test(nameLower);
-      const isLikelyNav = nameLower.includes("nav");
-      const isLikelyFooter = nameLower.includes("footer");
-      const isLikelySection = nameLower.includes("section");
-      const isLikelyImage = nameLower.includes("image") || tag === "img";
-
-      const addIssue = (message: string) => {
-        if (!seenMessages.has(message)) {
-          seenMessages.add(message);
-          issues.push(message);
-        }
-      };
-
-      if (isLikelyButton && tag !== "button") {
-        addIssue(
-          `❌ "${name}" looks like a button but is missing tag="button".`
-        );
+      if (nameLower.includes("section") && tag === "div") {
+        missingSection.add(name);
       }
+      if (nameLower.includes("footer") && tag === "div") {
+        missingFooter.add(name);
+      }
+      if (nameLower.includes("nav") && tag === "div") {
+        missingNav.add(name);
+      }
+    }
 
+    for (const node of textNodes) {
+      const tag = (node as any).tagName?.toLowerCase() || "span";
+      const name = (node as any).name || "";
+      const nameLower = name.toLowerCase();
+      if (nameLower.includes("ignore")) continue;
+
+      // Only warn if it looks like a heading but is not h1-h6
       if (
-        isLikelyHeading &&
+        (nameLower.includes("heading") || /^h[1-6]/.test(nameLower)) &&
         !["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)
       ) {
-        addIssue(
-          `❌ "${name}" looks like a heading but is missing correct tag (e.g., h1–h6).`
-        );
+        missingHeading.add(name);
       }
+    }
 
-      if (isLikelyNav && tag !== "nav") {
-        addIssue(
-          `❌ "${name}" appears to be a nav section but is missing tag="nav".`
-        );
-      }
+    function formatNames(names: Set<string>) {
+      const arr = Array.from(names);
+      if (arr.length <= 10) return arr.map(n => `- ${n}`).join(" ");
+      return arr.slice(0, 10).map(n => `- ${n}`).join(" ") + ` ...and ${arr.length - 10} more`;
+    }
 
-      if (isLikelyFooter && tag !== "footer") {
-        addIssue(
-          `❌ "${name}" appears to be a footer section but is missing tag="footer".`
-        );
-      }
-
-      if (isLikelySection && tag !== "section") {
-        addIssue(
-          `❌ "${name}" appears to be a section but is missing tag="section".`
-        );
-      }
-
-      if (isLikelyImage) {
-        if (tag !== "img") {
-          addIssue(
-            `❌ "${name}" appears to be an image but is missing tag="img".`
-          );
-        }
-        if (!altText || altText.trim() === "") {
-          addIssue(`❌ "${name}" is an image but is missing alt text.`);
-        }
-      }
+    const details: string[] = [];
+    if (missingSection.size > 0) {
+      details.push(
+        `❌ ${missingSection.size} layer(s) appear to be sections but are using the default <div> tag: ${formatNames(missingSection)}`
+      );
+    }
+    if (missingFooter.size > 0) {
+      details.push(
+        `❌ ${missingFooter.size} layer(s) appear to be footers but are using the default <div> tag: ${formatNames(missingFooter)}`
+      );
+    }
+    if (missingNav.size > 0) {
+      details.push(
+        `❌ ${missingNav.size} layer(s) appear to be nav sections but are using the default <div> tag: ${formatNames(missingNav)}`
+      );
+    }
+    if (missingHeading.size > 0) {
+      details.push(
+        `❌ ${missingHeading.size} text layer(s) look like headings but are using the default <span> tag: ${formatNames(missingHeading)}`
+      );
     }
 
     return {
       id: "accessibility-tags",
       title: "Accessibility Tags",
-      status: issues.length > 0 ? "fail" : "pass",
-      details: issues,
+      status: details.length > 0 ? "warning" : "pass",
+      details,
     };
   },
 };

@@ -9,32 +9,30 @@ import { lockedImagesCheck } from "./lockedImages";
 import { placeholderTextCheck } from "./placeHolder";
 import { reusableContentCheck } from "./reusableContent";
 import { reusableContentByNameCheck } from "./reusableContentByName";
-import { unnamedLayersCheck } from "./unnamedLayer";
-import { breakpointsCheck } from "./breakpointsCheck";
 import { cmsFieldNamingCheck } from "./cmsFieldNamingCheck";
-import { cmsMissingFieldBindingsCheck } from "./cmsMissingFieldBindingsCheck";
 import { cmsDuplicateFieldNamesCheck } from "./cmsDuplicateFieldNamesCheck";
 import { imageSizeCheck } from "./imageSizeCheck";
 import { custom404Check } from "./custom404Check";
-import { responsiveLayoutCheck } from "./responsiveLayoutCheck";
 import { imageMobileResolutionCheck } from "./imageMobileResolutionCheck";
-import { projectInfoChecklist } from "./getLocale";
 import { languageDefinedCheck } from "./launguageCheck";
 import { tooManyChildrenCheck } from "./tooManyChildren";
 import { unusedStylesCheck } from "./unusedStyles";
 import { unusedPagesCheck } from "./unusedPage";
 import { missingStacksCheck } from "./missingStackChecks";
 import { accessibilityTagCheck } from "./accessibilityTagCheck";
-import { cmsMissingPreviewImagesCheck } from "./cmsMissingPreviewImagesCheck";
 import { mailtoTelLinksCheck } from "./mailtoTelLinks";
 import { unusedComponentsCheck } from "./unusedComponents";
 import { autoImageResolution } from "./autoImageResolution";
+import { layerNamingCheck } from "./validateLayer";
+import { cmsArticleCheck } from "./cmsArticleCheck";
+import { linkValidationCheck } from "./urlCheck";
+
 
 
 
 export const checks = [
   placeholderTextCheck,
-  unnamedLayersCheck,
+  layerNamingCheck,
   emptyTextCheck,
   genericComponentNamesCheck,
   reusableContentCheck,
@@ -44,23 +42,22 @@ export const checks = [
   cmsUnusedCollectionsCheck,
   cmsFieldTypeValidationCheck,
   cmsUnlinkedCollectionsCheck,
-  cmsMissingPreviewImagesCheck,
   mailtoTelLinksCheck,
   unusedComponentsCheck,
   autoImageResolution, 
   custom404Check,
-  responsiveLayoutCheck,
-  breakpointsCheck,
-  unusedPagesCheck,
+  // responsiveLayoutCheck,
+  unusedPagesCheck, 
   missingStacksCheck,
   cmsFieldNamingCheck,
-  cmsMissingFieldBindingsCheck,
   cmsDuplicateFieldNamesCheck,
   imageSizeCheck,
   imageMobileResolutionCheck,
-  projectInfoChecklist,
+  // projectInfoChecklist,
   languageDefinedCheck,
   tooManyChildrenCheck,
   unusedStylesCheck,
   accessibilityTagCheck,
+  linkValidationCheck,
+  cmsArticleCheck 
 ];

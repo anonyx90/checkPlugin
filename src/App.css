@@ -269,7 +269,7 @@ header {
   white-space: nowrap;
 
   cursor: pointer;
-  border: rgb(94, 248, 127) 1px solid;
+  border: rgba(70, 58, 241, 0.603) 1px solid;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transition: background 0.3s ease;
 }

@@ -12,6 +12,11 @@ export const cmsDuplicateFieldNamesCheck = {
 
     for (const collection of collections) {
       const fields = await collection.getFields();
+      const items = await collection.getItems?.();
+      // Log the number of items for each collection for context
+      console.log(
+        `Collection "${collection.name}" has ${fields.length} fields and ${items ? items.length : 0} items.`
+      );
       for (const field of fields) {
         const arr = fieldNameMap.get(field.name) || [];
         arr.push(collection.name);

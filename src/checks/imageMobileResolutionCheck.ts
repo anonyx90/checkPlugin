@@ -1,44 +1,50 @@
 import { framer } from "framer-plugin";
+import type { CheckResult } from "../types";
 
 export const imageMobileResolutionCheck = {
   id: "image-mobile-resolution-check",
-  title: "Mobile Image Resolution Set to Auto (Lossless)",
+  title: "Phone Image Resolution Set to Auto (Lossless)",
   category: "Assets",
-  run: async () => {
+  run: async (): Promise<CheckResult> => {
     const frames = await framer.getNodesWithType("FrameNode");
-    const issues: string[] = [];
+    const wrongRes: Map<string, Set<string>> = new Map();
 
     for (const frame of frames) {
-      const name = (frame.name || "").toLowerCase();
-      const width = (frame as any).width ?? 0;
-      const isMobile =
-        name.includes("mobile") ||
-        name.includes("phone") ||
-        width <= 480;
+      const name = frame.name || frame.id;
 
+      // ✅ Only check mobile/phone-named frames
+      const isMobile = name.toLowerCase().includes("phone") || name.toLowerCase().includes("mobile");
       if (!isMobile) continue;
 
       const bg = (frame as any).backgroundImage;
       if (bg && typeof bg === "object") {
-        const res = bg.resolution;
-        if (
-          res !== "auto" &&
-          res !== "Auto(Lossless)"
-        ) {
-          issues.push(
-            `🖼️ Mobile frame "${frame.name || frame.id}" image resolution is "${res ?? "not set"}" — should be set to "Auto(Lossless)".`
-          );
+        const res = String(bg.resolution ?? "not set").toLowerCase();
+        if (res !== "auto" && res !== "auto(lossless)") {
+          if (!wrongRes.has(res)) wrongRes.set(res, new Set());
+          wrongRes.get(res)!.add(name);
         }
       }
     }
 
-    const status: "warning" | "pass" = issues.length > 0 ? "warning" : "pass";
+    const details: string[] = [];
+    wrongRes.forEach((names, res) => {
+      details.push(
+        `🖼️ ${names.size} phone frame(s) have resolution "${res}" — should be "Auto(Lossless)"`
+      );
+      details.push(
+        Array.from(names).map(n => `- "${n}"`).join("\n")
+      );
+    });
+
+    if (details.length > 0) {
+      details.push("\nTip: For phone breakpoints, set image resolution to 'Auto(Lossless)' to ensure crisp quality.");
+    }
 
     return {
       id: "image-mobile-resolution-check",
-      title: "Mobile Image Resolution Set to Auto (Lossless)",
-      status,
-      details: issues,
+      title: "Phone Image Resolution Set to Auto (Lossless)",
+      status: details.length > 0 ? "warning" : "pass",
+      details,
     };
   },
 };
