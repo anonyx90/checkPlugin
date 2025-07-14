@@ -20,8 +20,13 @@ export const cmsFieldTypeValidationCheck = {
       const fields = await collection.getFields();
 
       for (const field of fields) {
-        const name = field.name?.toLowerCase?.() || "";
-        const type = field.type?.toLowerCase?.() || "unknown";
+        // Ignore fields with type 'divider'
+        if (field.type?.toLowerCase() === "divider") {
+          continue;
+        }
+
+        const name = field.name?.toLowerCase() || "";
+        const type = field.type?.toLowerCase() || "unknown";
 
         for (const keyword in typeExpectations) {
           if (name.includes(keyword)) {
@@ -44,3 +49,4 @@ export const cmsFieldTypeValidationCheck = {
     };
   },
 };
+

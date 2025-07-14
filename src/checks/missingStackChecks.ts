@@ -1,37 +1,72 @@
 import { framer } from "framer-plugin";
 import type { CheckResult } from "../types";
-import type { FrameNode } from "framer-plugin";
+
+const ROOT_NAMES = ["desktop", "tablet", "mobile"];
 
 export const missingStacksCheck = {
   id: "missing-stacks",
-  title: "Missing Stack Layouts",
+  title: "Missing Stack Organization",
   category: "Layout",
   run: async (): Promise<CheckResult> => {
-    const frames = (await framer.getNodesWithType("FrameNode")) as FrameNode[];
+    const allFrames = (await framer.getNodesWithType("FrameNode")) as any[];
+    console.log(`[MissingStacks] Total FrameNodes fetched: ${allFrames.length}`);
 
-    const ignoreNames = ["desktop", "stack", "page", "wrapper", "container", "layout", "frame", "phone", "tablet", "mobile"];
+    const rootFrames = allFrames.filter(
+      (f) => ROOT_NAMES.includes((f.name || "").trim().toLowerCase())
+    );
+    console.log(`[MissingStacks] Root frames found (${ROOT_NAMES.join(", ")}): ${rootFrames.length}`);
 
-    const nonStackFrames = frames.filter((frame) => {
-      const layoutMode = (frame as any).layoutMode;
-      const name = (frame.name || "").toLowerCase();
+    const flagged: string[] = [];
 
-      const isIgnored = ignoreNames.some((n) => name === n);
-      return !isIgnored && layoutMode !== "horizontal" && layoutMode !== "vertical";
-    });
+    async function traverse(node: any, depth = 0) {
+      const indent = "  ".repeat(depth);
+      const children = await node.getChildren();
+      console.log(`${indent}[MissingStacks] Traversing "${node.name}" (${node.id}), children count: ${children.length}, layoutMode: '${node.layoutMode}'`);
+
+      for (const child of children) {
+        const grandChildren = await child.getChildren();
+        const lm = child.layoutMode;
+        console.log(
+          `${indent}  [MissingStacks] Checking child "${child.name}" (${child.id}), grandchildren count: ${grandChildren.length}, layoutMode: '${lm}' (type: ${typeof lm})`
+        );
+
+        if (
+          child.type === "FrameNode" &&
+          grandChildren.length >= 2 &&
+          (lm === undefined || lm === null || (lm !== "horizontal" && lm !== "vertical"))
+        ) {
+          console.log(`${indent}  [MissingStacks] FLAGGED "${child.name || child.id}" with layoutMode '${lm}'`);
+          flagged.push(child.name || child.id);
+        }
+
+        await traverse(child, depth + 2);
+      }
+    }
+
+    for (const root of rootFrames) {
+      await traverse(root);
+    }
 
     const details: string[] = [];
 
-    if (nonStackFrames.length > 0) {
-      details.push("⚠️ Some frames are missing Stack layouts. Use `layoutMode` for layout consistency.");
-      const sampleFrames = nonStackFrames.slice(0, 5).map((f) => `• "${f.name || f.id}"`);
-      details.push("Examples of frames without layout mode:");
-      details.push(...sampleFrames);
+    if (flagged.length > 0) {
+      details.push(
+        `⚠️ ${flagged.length} layer${flagged.length > 1 ? "s" : ""} inside desktop/tablet/mobile have 2+ children but no horizontal or vertical layoutMode.`
+      );
+      details.push("Examples:");
+      details.push(...flagged.slice(0, 5).map((n) => `• "${n}"`));
+    }
+
+    if (flagged.length === 0) {
+      console.log("[MissingStacks] No layers flagged");
+    } else {
+      console.log(`[MissingStacks] Total flagged layers: ${flagged.length}`);
     }
 
     return {
       id: "missing-stacks",
-      title: "Missing Stack Layouts",
-      status: nonStackFrames.length > 0 ? "warning" : "pass",
+      title: "Missing Stack Organization",
+      status: flagged.length > 0 ? "warning" : "pass",
       details,
     };
   },

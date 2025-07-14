@@ -1,5 +1,6 @@
 import { framer } from "framer-plugin";
 import type { CheckResult } from "../types";
+import React from "react";
 
 export const imageAltTextCheck = {
   id: "image-alt-text",
@@ -20,22 +21,36 @@ export const imageAltTextCheck = {
           if (!missingAltMap.has(key)) {
             missingAltMap.set(key, { name, url });
           }
-          // Optional: keep your debug log if needed
         }
       }
     }
 
-    const details: string[] = [];
+    const details: (string | React.ReactElement)[] = [];
     const uniqueTotal = missingAltMap.size;
+    
     if (uniqueTotal > 0) {
       details.push(
-        `❌ ${uniqueTotal} image${uniqueTotal > 1 ? "s" : ""} missing alt text:`
+        React.createElement("strong", null, 
+          `❌ ${uniqueTotal} image${uniqueTotal > 1 ? "s" : ""} missing alt text:`
+        )
       );
-      missingAltMap.forEach(({ name, url }) => {
+      
+      missingAltMap.forEach(({ name, url }, key) => {
         if (url) {
-          details.push(`- [${name}](${url})`);
+          details.push(
+            React.createElement("div", { key },
+              "• ",
+              React.createElement("a", { 
+                href: url, 
+                target: "_blank", 
+                rel: "noopener noreferrer" 
+              }, url) // Display URL instead of name
+            )
+          );
         } else {
-          details.push(`- "${name}"`);
+          details.push(
+            React.createElement("div", { key }, `• ${name} (no URL available)`)
+          );
         }
       });
     }

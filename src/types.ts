@@ -2,7 +2,7 @@ export type CheckResult = {
   id: string;
   title: string;
   status: "pass" | "fail" | "warning";
-  details?: string[];
+  details?: Array<string | JSX.Element>;
 };
 
 export type Check = {

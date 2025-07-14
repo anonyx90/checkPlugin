@@ -1,9 +1,11 @@
 import { framer } from "framer-plugin";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CheckResult } from "./types";
 import { checks } from "./checks/allChecks";
 import { PageSpeedResult } from "./PageSpeedResult";
 import "./App.css";
+import { TopBar } from "./components/topBar";
 
 framer.showUI({
   position: "center",
@@ -14,51 +16,99 @@ framer.showUI({
   resizable: true,
 });
 
-async function runAllChecks(): Promise<Record<string, CheckResult[]>> {
-  const results = await Promise.all(checks.map((check) => check.run()));
-  const grouped: Record<string, CheckResult[]> = {};
+type Check = {
+  id: string;
+  title: string;
+  run: () => Promise<CheckResult>;
+  category?: string;
+};
 
-  for (let i = 0; i < checks.length; i++) {
-    const category = checks[i].category ?? "Uncategorized";
+function groupChecksByCategory(checks: Array<Check>) {
+  const grouped: Record<string, Array<Check>> = {};
+  for (const check of checks) {
+    const category = check.category ?? "Uncategorized";
     if (!grouped[category]) grouped[category] = [];
-    grouped[category].push(results[i]);
+    grouped[category].push(check);
   }
   return grouped;
 }
 
-export function App() {
-  const [groupedResults, setGroupedResults] = useState<
-    Record<string, CheckResult[]>
-  >({});
-  const [running, setRunning] = useState(false);
-  const [expandedResults, setExpandedResults] = useState<
-    Record<string, boolean>
-  >({});
+function getStatusBadge(status: string | undefined) {
+  if (status === "fail") return "Fix it";
+  if (status === "warning") return "Warning";
+  if (status === "pass") return "Passed";
+  return status || "";
+}
 
-  const handleRunChecks = async () => {
-    setRunning(true);
-    setGroupedResults({});
-    setExpandedResults({});
-    try {
-      const [grouped] = await Promise.all([
-        runAllChecks(),
-        new Promise((resolve) => setTimeout(resolve, 2000)),
-      ]);
-      setGroupedResults(grouped);
-    } catch (error) {
-      setGroupedResults({
-        Error: [
-          {
-            id: "error",
-            title: "Plugin Error",
-            status: "fail",
-            details: [String(error)],
-          },
-        ],
-      });
-    } finally {
-      setRunning(false);
+function sortChecksByStatus(
+  checks: Array<Check>,
+  checkResults: Record<string, CheckResult>
+) {
+  const statusOrder = { fail: 0, warning: 1, pass: 2 };
+  return [...checks].sort((a, b) => {
+    const aStatus = checkResults[a.id]?.status ?? "";
+    const bStatus = checkResults[b.id]?.status ?? "";
+    const aOrder = statusOrder[aStatus as keyof typeof statusOrder] ?? 3;
+    const bOrder = statusOrder[bStatus as keyof typeof statusOrder] ?? 3;
+    return aOrder - bOrder;
+  });
+}
+
+function calculateScore(results: Record<string, CheckResult>) {
+  const all = Object.values(results);
+  if (all.length === 0) return 0;
+
+  let totalScore = 0;
+  const totalChecks = all.length;
+
+  for (const result of all) {
+    if (result.status === "pass") {
+      totalScore += 1;
+    } else if (result.status === "warning") {
+      totalScore += 0.5;
     }
+    // fail gets 0
+  }
+
+  return Math.round((totalScore / totalChecks) * 100);
+}
+
+// Updated: details can contain strings or JSX Elements
+function groupDetailsByCategory(
+  details: Array<string | JSX.Element>
+): Record<string, Array<string | JSX.Element>> {
+  const groups: Record<string, Array<string | JSX.Element>> = {};
+  let current = "General";
+  details.forEach((line) => {
+    if (typeof line === "string") {
+      const match = line.match(/^([^\w\s]{1,2})\s?\*\*(.+?)\*\*/);
+      if (match) {
+        current = match[2].trim();
+        groups[current] = [];
+      } else {
+        if (!groups[current]) groups[current] = [];
+        groups[current].push(line);
+      }
+    } else {
+      if (!groups[current]) groups[current] = [];
+      groups[current].push(line);
+    }
+  });
+  return groups;
+}
+
+export function App() {
+  const [expandedResults, setExpandedResults] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [runVersion, setRunVersion] = useState(0);
+  const [checkResults, setCheckResults] = useState<Record<string, CheckResult>>({});
+  const score = calculateScore(checkResults);
+
+  const handleRunChecks = () => {
+    setRunVersion((v) => v + 1);
+    setExpandedResults({});
+    setCheckResults({});
   };
 
   const toggleExpand = (id: string) => {
@@ -68,100 +118,157 @@ export function App() {
     }));
   };
 
+  const groupedChecks = groupChecksByCategory(checks);
+
   return (
-    <main className="dashboard">
-      <div className="top-row">
-        <header>
-          <h2> FrameAudit  ~ 🧪 ~ </h2>
-          <p>Run checks to validate your Framer template before submission.</p>
-        </header>
-      </div>
+    <>
+      <main className="dashboard">
+        <TopBar score={score} onRerun={handleRunChecks} />
+        <div className="">
+          <div className="top-row">
+            <header>
+              <h2> </h2>
+              <p></p>
+            </header>
+          </div>
 
-      <PageSpeedResult />
-      <button
-        className="special-button"
-        onClick={handleRunChecks}
-        disabled={running}
-      >
-        <span>🚀 Run All Checks</span>
-      </button>
+          <PageSpeedResult />
 
-      {running ? (
-        <div className="loader">
-          <span></span>
+          <div className="results-list fade-in">
+            {Object.entries(groupedChecks).map(([category, group]) => {
+              const allLoaded = group.every((check) => checkResults[check.id]);
+
+              const checksToShow = allLoaded
+                ? sortChecksByStatus(group, checkResults)
+                : group;
+
+              return (
+                <div key={category} style={{ marginBottom: 24 }}>
+                  <h3 style={{ margin: "16px 0 8px 0", fontSize: 17 }}>{category}</h3>
+                  {checksToShow.map((check) => (
+                    <CheckResultBox
+                      key={check.id}
+                      check={check}
+                      expanded={expandedResults[check.id] ?? false}
+                      toggleExpand={toggleExpand}
+                      runVersion={runVersion}
+                      onResult={(result) =>
+                        setCheckResults((r) => ({ ...r, [check.id]: result }))
+                      }
+                    />
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            className="go-to-top"
+            style={{ fontSize: "1.5rem" }}
+            onClick={() => {
+              const container = document.querySelector(".dashboard");
+              if (container) {
+                container.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+          >
+            &#x1F51D;
+          </button>
         </div>
-      ) : (
-        <>
-          {Object.keys(groupedResults).length > 0 && (
-            <div className="results-list fade-in">
-              {Object.entries(groupedResults).map(([category, results]) => (
-                <section key={category} className="category-group">
-                  <h3>{category}</h3>
-                  {results.map((result) => {
-                    const emoji =
-                      result.status === "pass"
-                        ? "✅"
-                        : result.status === "fail"
-                        ? "❌"
-                        : "⚠️";
+      </main>
+    </>
+  );
+}
 
-                    const isExpanded = expandedResults[result.id] ?? false;
-                    const detailsToShow = result.details
-                      ? isExpanded
-                        ? result.details
-                        : result.details.slice(0, 5)
-                      : [];
+function CheckResultBox({
+  check,
+  expanded,
+  toggleExpand,
+  runVersion,
+  onResult,
+}: {
+  check: { id: string; title: string; run: () => Promise<CheckResult> };
+  expanded: boolean;
+  toggleExpand: (id: string) => void;
+  runVersion: number;
+  onResult: (result: CheckResult) => void;
+}) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["check", check.id, runVersion],
+    queryFn: check.run,
+    refetchOnWindowFocus: false,
+  });
 
-                    return (
-                      <div
-                        key={result.id}
-                        className={`result-box ${result.status}`}
-                      >
-                        <div className="result-header">
-                          <span>
-                            {emoji} {result.title}
-                          </span>
-                          <span className="result-status">{result.status}</span>
-                        </div>
+  useEffect(() => {
+    if (data) onResult(data);
+  }, [data]);
 
-                        {Array.isArray(result.details) &&
-                          result.details.length > 0 && (
-                            <ul className="result-details">
-                              {detailsToShow.map((d, i) => (
-                                <li key={i}>{d}</li>
-                              ))}
-                              {result.details.length > 5 && (
-                                <button
-                                  className="show-more"
-                                  onClick={() => toggleExpand(result.id)}
-                                >
-                                  {isExpanded ? "Show Less" : "Show More"}
-                                </button>
-                              )}
-                            </ul>
-                          )}
-                      </div>
-                    );
-                  })}
-                </section>
+  const emoji =
+    data?.status === "pass"
+      ? "✅"
+      : data?.status === "fail"
+      ? "❌"
+      : "⚠️";
+
+  // Updated typing here as well
+  let groupedDetails: Record<string, Array<string | JSX.Element>> = {};
+  if (data?.details) {
+    groupedDetails = groupDetailsByCategory(data.details);
+  }
+
+  let detailsToShow: [string, Array<string | JSX.Element>][] = [];
+  if (data?.details) {
+    if (expanded) {
+      detailsToShow = Object.entries(groupedDetails);
+    } else {
+      let count = 0;
+      detailsToShow = [];
+      for (const [cat, lines] of Object.entries(groupedDetails)) {
+        if (count >= 5) break;
+        const linesToShow = lines.slice(0, Math.max(0, 5 - count));
+        if (linesToShow.length > 0) {
+          detailsToShow.push([cat, linesToShow]);
+          count += linesToShow.length;
+        }
+      }
+    }
+  }
+
+  return (
+    <div className={`result-box ${data?.status || ""}`}>
+      <div className="result-header">
+        <span>
+          {emoji} {check.title}
+        </span>
+        <span className="result-status">
+          {isLoading
+            ? "Loading..."
+            : error
+            ? "Error"
+            : getStatusBadge(data?.status)}
+        </span>
+      </div>
+      <div className="result-details">
+        {isLoading && <div>Loading...</div>}
+        {error && <div>Error: {String(error)}</div>}
+        {detailsToShow.map(([cat, lines], i) => (
+          <div key={cat + i} style={{ marginBottom: 8 }}>
+            {cat !== "General" && (
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>{cat}</div>
+            )}
+            <ul>
+              {lines.map((d, j) => (
+                <li key={j}>{d}</li> 
               ))}
-            </div>
-          )}
-              <button
-        className="go-to-top"
-        style={{ fontSize: "1.5rem" }}
-        onClick={() => {
-          const container = document.querySelector(".dashboard");
-          if (container) {
-            container.scrollTo({ top: 0, behavior: "smooth" });
-          }
-        }}
-      >
-      &#x1F51D;
-      </button>
-        </>
-      )}
-  
-    </main>
+            </ul>
+          </div>
+        ))}
+        {data?.details && data.details.length > 5 && (
+          <button className="show-more" onClick={() => toggleExpand(check.id)}>
+            {expanded ? "Show Less" : "Show More"}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

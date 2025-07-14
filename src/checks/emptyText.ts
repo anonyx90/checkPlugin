@@ -3,49 +3,38 @@ import { CheckResult } from "../types";
 
 export const emptyTextCheck = {
   id: "empty-text",
-  title: "Text Layers Are Not Empty or Too Short",
+  title: "Text Layers Should Not Be Empty",
   category: "Accessibility",
 
   run: async (): Promise<CheckResult> => {
     const nodes = await framer.getNodesWithType("TextNode");
 
-    
-    const emptyLayers = new Set<string>();
-    const shortTextMap = new Map<string, Set<string>>(); 
+    let emptyCount = 0;
 
     for (const node of nodes) {
       const text = await node.getText();
-      const trimmed = text?.trim() ?? "";
-      const name = node.name || node.id;
+      const trimmed = text?.replace(/[\s\u200B-\u200D\uFEFF]/g, "") ?? "";
 
       if (trimmed === "") {
-        emptyLayers.add(name);
-      } else if (trimmed.length <= 2) {
-        if (!shortTextMap.has(trimmed)) shortTextMap.set(trimmed, new Set());
-        shortTextMap.get(trimmed)!.add(name);
+        emptyCount++;
       }
     }
 
     const details: string[] = [];
 
-    if (emptyLayers.size > 0) {
-      details.push(
-        `❌ Empty text in ${emptyLayers.size} layer(s):\n- ${Array.from(emptyLayers).join(" - ")}`
-      );
+    if (emptyCount > 0) {
+      const message = `⚠️ Found ${emptyCount} empty text layer${emptyCount > 1 ? "s" : ""}.`;
+      console.log(`⚠️ Text Layers Should Not Be Empty\nWarning\n${message}`);
+      details.push(message);
     }
-
-    
-    shortTextMap.forEach((names, shortText) => {
-      details.push(
-        `⚠️ Very short text (“${shortText}”) in ${names.size} layer(s):\n- ${Array.from(names).join(" - ")}`
-      );
-    });
 
     return {
       id: "empty-text",
-      title: "Text Layers Are Not Empty or Too Short",
-      status: details.length > 0 ? "warning" : "pass",
-      details,
+      title: "Text Layers Should Not Be Empty",
+      status: emptyCount > 0 ? "warning" : "pass",
+      details: details.length > 0
+        ? details
+        : ["✅ All text layers have meaningful content."],
     };
   },
 };

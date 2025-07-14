@@ -116,7 +116,9 @@ header {
 
 /* ================= Dashboard ================= */
 .dashboard {
-  padding: 16px;
+  padding-right: 16px;
+  padding-left: 16px;
+  padding-bottom: 8px;
   font-size: 13px;
   overflow-y: auto;
   max-height: 100%;
@@ -136,6 +138,8 @@ header {
   border-left: 4px solid;
   margin: 10px;
 }
+
+
 
 .result-box.pass {
   border-color: #4caf50;
@@ -185,56 +189,7 @@ header {
   margin-bottom: 4px;
 }
 
-/* ================= Special Button ================= */
-.special-button {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #183153;
-  border-radius: 15px;
-  padding: 20px;
-  border: none;
-  margin-bottom: 8px;
 
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  overflow: hidden;
-  font-family: "Montserrat", sans-serif;
-}
-
-.special-button::after {
-  content: "";
-  position: absolute;
-  width: 0%;
-  height: 100%;
-  background: #02c512b6;
-  transition: all 0.4s ease-in-out;
-  right: 0;
-}
-
-.special-button:hover::after {
-  left: 0;
-  width: 100%;
-  right: auto;
-}
-
-.special-button span {
-  z-index: 1;
-  text-align: center;
-  width: 100%;
-  padding: 18px 25px;
-  color: #fff;
-  font-size: 1.125em;
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  transition: all 0.3s ease-in-out;
-}
-
-.special-button:hover span {
-  color: #183153;
-  animation: scaleUp 0.3s ease-in-out;
-}
 
 @keyframes scaleUp {
   0% {
@@ -263,31 +218,58 @@ header {
   max-width: 80px;
   border-radius: 8px;
 
-  background-color: #333;
+  background-color: #34c75981; /* Green color */
   color: white;
   font-size: 14px;
   white-space: nowrap;
 
   cursor: pointer;
-  border: rgba(70, 58, 241, 0.603) 1px solid;
+  border: rgb(70, 58, 241) 1px solid;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transition: background 0.3s ease;
 }
 
 .go-to-top:hover {
-  background-color: #555;
+  background-color: #4caf50; /* Darker green color */
 }
 
+
+/* From Uiverse.io by minecrafte_8792 */ 
 button {
-  background: #252525;
-  color: #fafafa;
-  margin-top: 10px;
+  color: #cfcbcb;
+  padding: 0.7em 1.7em;
+  font-size: 18px;
+  border-radius: 0.4em;
+  background: #212121;
   cursor: pointer;
-  border: none;
-  padding: 10px;
-  font-size: 14px;
+  border: 1px solid #212121;
+  transition: all 0.3s;
+  box-shadow:
+    6px 6px 12px #0a0a0a,
+    -6px -6px 12px #2f2f2f;
 }
 
-button:hover {
-  background: #333;
+button:active {
+  color: #666;
+  box-shadow:
+    0px 0px 0px #000,
+    0px 0px 0px #2f2f2f,
+    inset 4px 4px 12px #1a1a1a,
+    inset -4px -4px 12px #1f1f1f;
 }
+
+a {
+  color: #34c759; /* Green color */
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+a:hover,
+a:focus {
+  color: #1e8654; /* Darker green on hover/focus */
+  outline: none;
+  text-decoration: none;
+  transition: none;
+}
+

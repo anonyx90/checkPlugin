@@ -5,7 +5,7 @@ export const accessibilityTagCheck: Check = {
   id: "accessibility-tags",
   title: "Accessibility Tags",
   category: "Accessibility",
-
+  
   run: async () => {
     const frameNodes = await framer.getNodesWithType("FrameNode");
     const textNodes = await framer.getNodesWithType("TextNode");
@@ -37,8 +37,6 @@ export const accessibilityTagCheck: Check = {
       const name = (node as any).name || "";
       const nameLower = name.toLowerCase();
       if (nameLower.includes("ignore")) continue;
-
-      // Only warn if it looks like a heading but is not h1-h6
       if (
         (nameLower.includes("heading") || /^h[1-6]/.test(nameLower)) &&
         !["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)
@@ -56,22 +54,27 @@ export const accessibilityTagCheck: Check = {
     const details: string[] = [];
     if (missingSection.size > 0) {
       details.push(
-        `❌ ${missingSection.size} layer(s) appear to be sections but are using the default <div> tag: ${formatNames(missingSection)}`
+        `⚠️ ${missingSection.size} layer(s) appear to be sections but are using the default <div> tag: ${formatNames(missingSection)}`
       );
     }
     if (missingFooter.size > 0) {
       details.push(
-        `❌ ${missingFooter.size} layer(s) appear to be footers but are using the default <div> tag: ${formatNames(missingFooter)}`
+        `⚠️ ${missingFooter.size} layer(s) appear to be footers but are using the default <div> tag: ${formatNames(missingFooter)}`
       );
     }
     if (missingNav.size > 0) {
       details.push(
-        `❌ ${missingNav.size} layer(s) appear to be nav sections but are using the default <div> tag: ${formatNames(missingNav)}`
+        `⚠️ ${missingNav.size} layer(s) appear to be nav sections but are using the default <div> tag: ${formatNames(missingNav)}`
       );
     }
     if (missingHeading.size > 0) {
       details.push(
-        `❌ ${missingHeading.size} text layer(s) look like headings but are using the default <span> tag: ${formatNames(missingHeading)}`
+        `⚠️ ${missingHeading.size} text layer(s) look like headings but are using the default <span> tag: ${formatNames(missingHeading)}`
+      );
+    }
+    if (details.length > 0) {
+      details.push(
+        "⚠️ Note: This check may produce false positives if layer names contain keywords like 'section', 'footer', 'nav', or 'heading' but are not intended to be semantic elements. Always verify before making changes."
       );
     }
 

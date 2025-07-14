@@ -1,21 +1,6 @@
 import { framer } from "framer-plugin";
 import { Check } from "../types";
 
-// Helper to normalize names for comparison
-function normalize(str: string) {
-  return str.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-// Optionally, add aliases for common style names
-const styleAliases: Record<string, string[]> = {
-  "heading1": ["h1"],
-  "heading2": ["h2"],
-  "heading3": ["h3"],
-  "heading4": ["h4"],
-  "heading5": ["h5"],
-  "heading6": ["h6"],
-};
-
 export const unusedStylesCheck: Check = {
   id: "unused-styles",
   title: "Unused Text/Color Styles",
@@ -23,43 +8,50 @@ export const unusedStylesCheck: Check = {
   run: async () => {
     const textNodes = await framer.getNodesWithType?.("TextNode") || [];
     const frameNodes = await framer.getNodesWithType?.("FrameNode") || [];
-    const allNodes = [...textNodes, ...frameNodes];
+    const componentNodes = await framer.getNodesWithType?.("ComponentNode") || [];
+    const componentInstanceNodes = await framer.getNodesWithType?.("ComponentInstanceNode") || [];
+
+    
+    const allNodes = [
+      ...textNodes,
+      ...frameNodes,
+      ...componentNodes,
+      ...componentInstanceNodes,
+    ];
 
     const textStyles = await framer.getTextStyles?.() || [];
     const colorStyles = await framer.getColorStyles?.() || [];
 
-    // Collect all text content and node names for fuzzy matching
-    const allText = new Set<string>();
+    
+    const usedTextStyleIds = new Set<string>();
     for (const node of allNodes) {
-      if ((node as any).name) allText.add(normalize((node as any).name));
-      if ((node as any).getText) {
-        const text = await (node as any).getText();
-        if (text) allText.add(normalize(text));
-      }
+      if ((node as any).textStyleId) usedTextStyleIds.add((node as any).textStyleId);
+      if ((node as any).inlineTextStyle?.id) usedTextStyleIds.add((node as any).inlineTextStyle.id);
     }
+    const unusedTextStyles = textStyles.filter((style: any) => !usedTextStyleIds.has(style.id));
 
-    // Fuzzy match: consider a style used if its normalized name or alias appears in any node name or text
-    const unusedTextStyles = textStyles.filter((style: any) => {
-      const normStyle = normalize(style.name);
-      const aliases = styleAliases[normStyle] || [];
-      const allPossible = [normStyle, ...aliases];
-      return !Array.from(allText).some(t =>
-        allPossible.some(alias => t.includes(alias))
-      );
-    });
-
-    const unusedColorStyles = colorStyles.filter((style: any) => {
-      const normStyle = normalize(style.name);
-      return !Array.from(allText).some(t => t.includes(normStyle));
-    });
+    
+    const usedColorStyleIds = new Set<string>();
+    for (const node of allNodes) {
+      if ((node as any).colorStyleId) usedColorStyleIds.add((node as any).colorStyleId);
+      if ((node as any).fillStyleId) usedColorStyleIds.add((node as any).fillStyleId);
+      if ((node as any).backgroundStyleId) usedColorStyleIds.add((node as any).backgroundStyleId);
+    }
+    const unusedColorStyles = colorStyles.filter((style: any) => !usedColorStyleIds.has(style.id));
 
     const details: string[] = [];
     if (unusedTextStyles.length > 0)
-      details.push(`Unused Text Styles (by fuzzy/alias match): ${unusedTextStyles.map((s: any) => s.name).join(", ")}`);
+      details.push(`Unused Text Styles: ${unusedTextStyles.map((s: any) => s.name).join(", ")}`);
     if (unusedColorStyles.length > 0)
-      details.push(`Unused Color Styles (by fuzzy match): ${unusedColorStyles.map((s: any) => s.name).join(", ")}`);
+      details.push(`Unused Color Styles: ${unusedColorStyles.map((s: any) => s.name).join(", ")}`);
 
-    if (details.length === 0) details.push("All styles appear to be used (by fuzzy/alias match).");
+    if (details.length === 0) {
+      details.push("All styles appear to be used (by direct assignment, including inside components).");
+    } else {
+      details.push(
+        "Note: Only direct assignments are detected. Styles used via tokens, overrides, or advanced features may not be detected. Use Framer's Find for full accuracy."
+      );
+    }
 
     return {
       id: "unused-styles",

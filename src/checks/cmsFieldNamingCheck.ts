@@ -18,12 +18,14 @@ export const cmsFieldNamingCheck = {
             issuesSet.add(
               `⚠️ Generic field name "${field.name}" in collection "${collection.name}". Use descriptive names.`
             );
+
           } else if (field.name === field.name.toUpperCase()) {
             issuesSet.add(
               `⚠️ All-caps name "${field.name}" in collection "${collection.name}". Use camelCase or normal casing.`
             );
           }
         }
+
       } catch (error) {
         console.warn(
           `Couldn't check fields for collection ${collection.name}`,

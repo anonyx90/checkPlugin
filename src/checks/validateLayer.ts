@@ -12,7 +12,6 @@ export const layerNamingCheck = {
       ...(await framer.getNodesWithType("FrameNode") || []),
       ...(await framer.getNodesWithType("TextNode") || []),
       ...(await framer.getNodesWithType("ComponentNode") || []),
-      ...(await framer.getNodesWithType("ComponentInstanceNode") || []),
       ...(await framer.getNodesWithType("SVGNode") || []),
     ];
 
@@ -43,7 +42,7 @@ export const layerNamingCheck = {
     }
 
     if (details.length > 0) {
-      details.unshift("## Naming Issues Found");
+  
       details.push("### Naming Guidelines");
       details.push("- Use 3-50 characters");
       details.push(`- Avoid reserved words: ${RESERVED_WORDS.join(", ")}`);

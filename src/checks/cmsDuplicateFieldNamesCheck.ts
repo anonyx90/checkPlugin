@@ -11,16 +11,18 @@ export const cmsDuplicateFieldNamesCheck = {
     const fieldNameMap = new Map<string, string[]>();
 
     for (const collection of collections) {
-      const fields = await collection.getFields();
-      const items = await collection.getItems?.();
-      // Log the number of items for each collection for context
+      const fields = await collection.getFields?.() ?? [];
+      const items = await collection.getItems?.() ?? [];
       console.log(
-        `Collection "${collection.name}" has ${fields.length} fields and ${items ? items.length : 0} items.`
+        `Collection "${collection.name ?? "Unnamed"}" has ${fields.length} fields and ${items.length} items.`
       );
+
       for (const field of fields) {
         const arr = fieldNameMap.get(field.name) || [];
-        arr.push(collection.name);
-        fieldNameMap.set(field.name, arr);
+        if (!arr.includes(collection.name)) {
+          arr.push(collection.name);
+          fieldNameMap.set(field.name, arr);
+        }
       }
     }
 

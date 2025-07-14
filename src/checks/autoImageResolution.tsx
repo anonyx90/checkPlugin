@@ -1,3 +1,4 @@
+
 import { framer } from "framer-plugin";
 import { CheckResult } from "../types";
 
@@ -8,7 +9,6 @@ export const autoImageResolution = {
   run: async (): Promise<CheckResult> => {
     const frames = await framer.getNodesWithType("FrameNode");
 
-    // Group issues by type and resolution value, using URL as key if available
     const missingRes: Record<string, { names: string[]; url?: string }> = {};
     const wrongRes: Record<string, Record<string, { names: string[]; url?: string }>> = {};
 
@@ -31,7 +31,7 @@ export const autoImageResolution = {
       }
     }
 
-    const details: string[] = [];
+    const details: (string | JSX.Element)[] = [];
 
     const missingKeys = Object.keys(missingRes);
     if (missingKeys.length > 0) {
@@ -40,7 +40,16 @@ export const autoImageResolution = {
         const { names, url } = missingRes[key];
         const namePreview = names.slice(0, 3).join(", ") + (names.length > 3 ? ", ..." : "");
         if (url) {
-          details.push(`- [${namePreview}](${url})`);
+          details.push(
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {url}
+            </a>
+          );
         } else {
           details.push(`- ${namePreview}`);
         }
@@ -54,7 +63,17 @@ export const autoImageResolution = {
         const { names, url } = group[key];
         const namePreview = names.slice(0, 3).join(", ") + (names.length > 3 ? ", ..." : "");
         if (url) {
-          details.push(`- [${namePreview}](${url})`);
+          details.push(
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+           
+            >
+              {url}
+            </a>
+          );
         } else {
           details.push(`- ${namePreview}`);
         }
@@ -62,7 +81,9 @@ export const autoImageResolution = {
     });
 
     if (details.length > 0) {
-      details.push("\nTip: Setting image resolution to 'auto' ensures best quality and performance.");
+      details.push(
+        "\nTip: Setting image resolution to 'auto' ensures best quality and performance."
+      );
     }
 
     return {
